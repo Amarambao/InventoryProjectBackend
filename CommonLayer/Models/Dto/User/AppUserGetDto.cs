@@ -20,7 +20,7 @@ namespace CommonLayer.Models.Dto.User
             UserName = user.UserName!;
             Email = user.Email!;
             IsBlocked = user.IsBlocked;
-            IsAdmin = IsAdmin;
+            IsAdmin = isAdmin;
         }
     }
 }

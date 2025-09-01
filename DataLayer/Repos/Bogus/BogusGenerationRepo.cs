@@ -32,18 +32,21 @@ namespace DataLayer.Repos.Bogus
             if (!await _roleManager.RoleExistsAsync("admin"))
                 await _roleManager.CreateAsync(new IdentityRole<Guid> { Name = "admin" });
 
-            var adminUser = new AppUserEntity
+            var adminUser = await _userManager.FindByEmailAsync("admin@admin.com");
+
+            if (adminUser is null)
             {
-                UserName = "Admin",
-                Email = "admin@admin.com",
-                Name = "Admin",
-                NormalizedName = "Admin".CustomNormalize(),
-            };
-
-            if (await _userManager.FindByEmailAsync("admin@admin.com") is null)
+                adminUser = new AppUserEntity
+                {
+                    UserName = "Admin",
+                    Email = "admin@admin.com",
+                    Name = "Admin",
+                    NormalizedName = "Admin".CustomNormalize(),
+                };
                 await _userManager.CreateAsync(adminUser, "admin");
+            }
 
-            if (await _userManager.IsInRoleAsync(adminUser, "admin"))
+            if (!await _userManager.IsInRoleAsync(adminUser, "admin"))
                 await _userManager.AddToRoleAsync(adminUser, "admin");
         }
 
@@ -199,7 +202,7 @@ namespace DataLayer.Repos.Bogus
         private async Task AddInventoryEditorsAsync(Faker faker, InventoryEntity inventory, Guid creatorId, List<AppUserEntity> users)
         {
             var pickedUsers = new HashSet<Guid> { creatorId };
-            
+
             if (!inventory.IsPublic)
             {
                 var maxExtra = faker.Random.Number(3);

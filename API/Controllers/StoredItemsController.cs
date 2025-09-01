@@ -25,7 +25,7 @@ namespace API.Controllers
 
         [HttpPost("add")]
         [Authorize]
-        public async Task<ActionResult<StoredItemsEntity?>> AddItemAsync([FromBody] AddItemDto dto)
+        public async Task<ActionResult<AddItemDto?>> AddItemAsync([FromBody] AddItemDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {
@@ -40,7 +40,7 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            var result = _storedItemsSrv.AddItemAsync(dto);
+            var result = await _storedItemsSrv.AddItemAsync(dto);
 
             return Ok(result);
         }
@@ -59,7 +59,7 @@ namespace API.Controllers
 
         [HttpDelete("delete")]
         [Authorize]
-        public async Task<IActionResult> RemoveRangeAsync([FromQuery] IdAndListDto<Guid> dto)
+        public async Task<ActionResult<ResultDto?>> RemoveRangeAsync([FromQuery] IdAndListDto<Guid> dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {
@@ -74,9 +74,9 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            var result = _storedItemsSrv.RemoveRangeAsync(dto.Values);
+            await _storedItemsSrv.RemoveRangeAsync(dto.Values);
 
-            return Ok(result);
+            return Ok(null);
         }
     }
 }

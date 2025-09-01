@@ -8,6 +8,8 @@ namespace CommonLayer.Models.Dto.Item
         public string ItemType { get; set; }
         public string? CustomId { get; set; }
 
+        public AddItemDto() { } 
+
         public AddItemDto(StoredItemsEntity entity, string itemType) 
         { 
             InventoryId = entity.InventoryId;
