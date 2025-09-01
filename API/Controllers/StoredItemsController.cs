@@ -1,0 +1,82 @@
+﻿using BusinessLayer.Interfaces;
+using CommonLayer.Models.Dto.General;
+using CommonLayer.Models.Dto.Item;
+using CommonLayer.Models.Entity;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class StoredItemsController : ControllerBase
+    {
+        private readonly IStoredItemsSrv _storedItemsSrv;
+        private readonly ICheckSrv _checkSrv;
+
+        public StoredItemsController(
+            IStoredItemsSrv storedItemsSrv,
+            ICheckSrv checkSrv)
+        {
+            _storedItemsSrv = storedItemsSrv;
+            _checkSrv = checkSrv;
+        }
+
+        [HttpPost("add")]
+        [Authorize]
+        public async Task<ActionResult<StoredItemsEntity?>> AddItemAsync([FromBody] AddItemDto dto)
+        {
+            if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
+            {
+                var resultDto = new ResultDto<Guid>(false, "You are blocked");
+                return BadRequest(resultDto);
+            }
+
+            if (!(await _checkSrv.IsUserInventoryEditorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), dto.InventoryId)
+                || User.IsInRole("admin")))
+            {
+                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
+                return Ok(checkResult);
+            }
+
+            var result = _storedItemsSrv.AddItemAsync(dto);
+
+            return Ok(result);
+        }
+
+        [HttpGet("get")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<StoredItemGetAllDto>>> GetAllWPagination([FromQuery] PaginationRequest dto)
+        {
+            if (!dto.InventoryId.HasValue)
+                return Ok(new());
+
+            var result = await _storedItemsSrv.GetAllWPagination(dto);
+
+            return Ok(result);
+        }
+
+        [HttpDelete("delete")]
+        [Authorize]
+        public async Task<IActionResult> RemoveRangeAsync([FromQuery] IdAndListDto<Guid> dto)
+        {
+            if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
+            {
+                var resultDto = new ResultDto<Guid>(false, "You are blocked");
+                return BadRequest(resultDto);
+            }
+
+            if (!(await _checkSrv.IsUserInventoryEditorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), dto.Id)
+                || User.IsInRole("admin")))
+            {
+                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
+                return Ok(checkResult);
+            }
+
+            var result = _storedItemsSrv.RemoveRangeAsync(dto.Values);
+
+            return Ok(result);
+        }
+    }
+}
