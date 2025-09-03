@@ -20,7 +20,8 @@ namespace BusinessLayer.Services
 
         public async Task ModifyInventoryTagsRangeAsync(Guid inventoryId, IEnumerable<string> tagsRequest)
         {
-            var inventoryTags = (await _invTagRepo.GetRangeAsync(inventoryId: inventoryId)).ToDictionary(i => i.Tag.NormalizedName);
+            var inventoryTagsEnt = await _invTagRepo.GetRangeAsync(inventoryId: inventoryId);
+            var inventoryTags = inventoryTagsEnt.ToDictionary(i => i.Tag.NormalizedName);
 
             await _tagSrv.CreateNonExistingAsync(tagsRequest);
 

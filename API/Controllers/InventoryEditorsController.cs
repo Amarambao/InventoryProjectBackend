@@ -41,7 +41,7 @@ namespace API.Controllers
 
             await _invEditorsSrv.AddRange(dto.Id, dto.Values);
 
-            return Ok();
+            return Ok(null);
         }
 
         [HttpDelete("delete")]

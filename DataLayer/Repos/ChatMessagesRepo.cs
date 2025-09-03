@@ -57,7 +57,7 @@ namespace DataLayer.Repos
                 .Where(u => chatterIds.Contains(u.Id))
                 .ToListAsync();
         }
-            
+
         public Task<List<ChatMessageEntity>> GetChatMessagesByTimeAsync(IEnumerable<DateTime> dateTimes)
             => _context.ChatMessages
                 .AsNoTracking()

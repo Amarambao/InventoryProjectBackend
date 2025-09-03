@@ -56,7 +56,7 @@ namespace API.Controllers
 
         [HttpDelete("delete")]
         [Authorize]
-        public async Task<ActionResult<ResultDto<IEnumerable<MessageGetDto>>>> RemoveMessageRangeAsync([FromQuery] Guid inventoryId, IEnumerable<DateTime> dateTimes)
+        public async Task<ActionResult<ResultDto<IEnumerable<MessageGetDto>>>> RemoveMessageRangeAsync([FromQuery] Guid inventoryId, IEnumerable<string> dateTimes)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {
@@ -71,9 +71,12 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            await _chatMessagesSrv.RemoveMessageRangeAsync(dateTimes);
+            await _chatMessagesSrv.RemoveMessageRangeAsync(dateTimes
+                .Select(dt => DateTime.TryParse(dt, out var parsed) ? parsed : (DateTime?)null)
+                .Where(d => d.HasValue)
+                .Select(d => d!.Value.ToUniversalTime()));
 
-            return Ok();
+            return Ok(null);
         }
     }
 }

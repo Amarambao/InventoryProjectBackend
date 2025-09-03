@@ -72,10 +72,17 @@ namespace DataLayer.Repos
                 inventory.IsPublic = dto.IsPublic;
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.Name))
+            if (!string.IsNullOrWhiteSpace(dto.Name) && inventory.InventoryType.Name != dto.Name.Trim())
             {
-                inventory.InventoryType.Name = dto.Name;
-                inventory.InventoryType.NormalizedName = dto.Name.CustomNormalize();
+                var invType = await _context.InventoryType.FirstOrDefaultAsync(it => it.NormalizedName == dto.Name.CustomNormalize());
+
+                if (invType is null)
+                {
+                    invType = new InventoryTypeEntity(dto.Name);
+                    await _context.InventoryType.AddAsync(invType);
+                }
+
+                inventory.InventoryTypeId = invType.Id;
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Description))

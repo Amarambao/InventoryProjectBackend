@@ -32,9 +32,9 @@ namespace API.Controllers
                 return BadRequest(resultDto);
             }
 
-            var result = await _invSrv.CreateInventoryAsync(dto, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+            var inventoryId = await _invSrv.CreateInventoryAsync(dto, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
 
-            return Ok(result);
+            return Ok(new ResultDto<Guid>(true, null, inventoryId));
         }
 
         [HttpGet("get")]
@@ -57,7 +57,7 @@ namespace API.Controllers
 
         [HttpPost("update")]
         [Authorize]
-        public async Task<ActionResult<ResultDto>> UpdateInventoryAsync([FromBody] InventoryUpdateDto dto)
+        public async Task<ActionResult<ResultDto?>> UpdateInventoryAsync([FromBody] InventoryUpdateDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {

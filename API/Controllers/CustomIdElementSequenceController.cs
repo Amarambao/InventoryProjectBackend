@@ -41,7 +41,7 @@ namespace API.Controllers
 
             await _customIdElementSequenceSrv.ModifyCustomIdSequenceAsync(dto.InventoryId, dto.ItemId, dto.Sequence);
 
-            return Ok();
+            return Ok(null);
         }
 
         [HttpGet("get")]

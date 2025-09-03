@@ -23,7 +23,7 @@ namespace DataLayer.Repos
         public Task<List<InventoryItemTypesEntity>> GetRangeAsync(Guid inventoryId)
             => _context.InventoryItemTypes
                 .AsNoTracking()
-                .Include(ii => ii.Inventory)
+                .Include(ii => ii.Item)
                 .Where(ii => ii.InventoryId == inventoryId)
                 .ToListAsync();
 

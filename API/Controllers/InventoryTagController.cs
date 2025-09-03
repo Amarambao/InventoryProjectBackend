@@ -8,37 +8,36 @@ namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class InventoryItemTypeController : ControllerBase
+    public class InventoryTagController : ControllerBase
     {
-        private readonly IInventoryItemTypesSrv _invItemTypeSrv;
+        private readonly IInventoryTagSrv _invTagSrv;
         private readonly ICheckSrv _checkSrv;
 
-        public InventoryItemTypeController(
-            IInventoryItemTypesSrv invItemTypeSrv,
+        public InventoryTagController(IInventoryTagSrv invTagSrv,
             ICheckSrv checkSrv)
         {
-            _invItemTypeSrv = invItemTypeSrv;
+            _invTagSrv = invTagSrv;
             _checkSrv = checkSrv;
         }
 
         [HttpPost("modify")]
         [Authorize]
-        public async Task<ActionResult<ResultDto?>> ModifyInventoryItemsRangeAsync([FromBody] IdAndListDto<string> dto)
+        public async Task<ActionResult<ResultDto?>> GetWPaginationAsync([FromBody] IdAndListDto<string> dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {
-                var resultDto = new ResultDto<Guid>(false, "You are blocked");
+                var resultDto = new ResultDto(false, "You are blocked");
                 return BadRequest(resultDto);
             }
 
             if (!(await _checkSrv.IsInventoryCreatorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), [dto.Id])
                 || User.IsInRole("admin")))
             {
-                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
+                var checkResult = new ResultDto(false, "You are not allowed to edit inventory tags");
                 return Ok(checkResult);
             }
 
-            await _invItemTypeSrv.ModifyInventoryItemsRangeAsync(dto.Id, dto.Values);
+            await _invTagSrv.ModifyInventoryTagsRangeAsync(dto.Id, dto.Values);
 
             return Ok(null);
         }
