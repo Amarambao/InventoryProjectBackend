@@ -20,6 +20,7 @@ namespace BusinessLayer.Settings
             services.AddScoped<IAppUserSrv, AppUserSrv>();
             services.AddScoped<IChatMessagesSrv, ChatMessagesSrv>();
             services.AddScoped<ICheckSrv, CheckSrv>();
+            services.AddScoped<ICustomDescriptionSequenceSrv, CustomDescriptionSequenceSrv>();
             services.AddScoped<ICustomIdElementSequenceSrv, CustomIdElementSequenceSrv>();
             services.AddScoped<IInventoryEditorsSrv, InventoryEditorsSrv>();
             services.AddScoped<IInventoryItemTypesSrv, InventoryItemTypesSrv>();

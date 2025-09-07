@@ -4,8 +4,6 @@ namespace DataLayer.Interfaces
 {
     public interface IInventoryItemTypesRepo
     {
-        Task CreateRangeAsync(IEnumerable<InventoryItemTypesEntity> inventoryItems);
-        Task<List<InventoryItemTypesEntity>> GetRangeAsync(Guid inventoryId);
-        Task RemoveRangeAsync(IEnumerable<InventoryItemTypesEntity> inventoryItems);
+        Task UpdateInventoryItemTypesAsync(Guid inventoryId, IEnumerable<InventoryItemTypesEntity> newInventoryItemTypes);
     }
 }

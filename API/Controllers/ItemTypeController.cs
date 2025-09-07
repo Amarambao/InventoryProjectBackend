@@ -27,13 +27,13 @@ namespace API.Controllers
 
         [HttpGet("get-by-inventory-id")]
         [AllowAnonymous]
-        public async Task<ActionResult<List<IdAndNameDto>>> GetItemRangeAsync([FromQuery] Guid inventoryId)
+        public async Task<ActionResult<List<IdAndStringDto>>> GetItemRangeAsync([FromQuery] Guid inventoryId)
         {
             var result = (await _itemTypeSrv.GetItemRangeAsync(inventoryId))
-                .Select(i => new IdAndNameDto() 
+                .Select(i => new IdAndStringDto() 
                 { 
                     Id = i.Id, 
-                    Name = i.Name
+                    Value = i.Name
                 });
 
             return Ok(result);

@@ -38,7 +38,7 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            await _invItemTypeSrv.ModifyInventoryItemsRangeAsync(dto.Id, dto.Values);
+            await _invItemTypeSrv.UpdateInventoryItemTypesAsync(dto.Id, dto.Values);
 
             return Ok(null);
         }

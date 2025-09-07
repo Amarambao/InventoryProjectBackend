@@ -11,9 +11,13 @@ namespace CommonLayer.Configuration
             builder.HasIndex(x => x.NormalizedName)
                 .IsUnique(false);
 
+            builder.Property(x => x.ConcurrencyStamp)
+                .IsConcurrencyToken();
+
             builder.HasMany(x => x.UserInventories)
                 .WithOne(x => x.User)
-                .HasForeignKey(x => x.UserId);
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

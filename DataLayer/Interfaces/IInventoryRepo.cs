@@ -9,7 +9,7 @@ namespace DataLayer.Interfaces
         Task CreateAsync(InventoryEntity entity);
         Task<List<InventoryEntity>> GetRangeWPaginationAsync(InventoryRequestDto dto);
         Task<InventoryEntity?> FindByIdAsync(Guid itemId);
-        Task<ResultDto?> UpdateAsync(InventoryUpdateDto dto);
+        Task<ResultDto> UpdateAsync(InventoryUpdateDto dto);
         Task RemoveRangeAsync(IEnumerable<Guid> inventoryIds);
     }
 }

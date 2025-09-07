@@ -13,10 +13,10 @@ namespace CommonLayer.Models.Dto.Message
         public MessageGetDto() { }
 
         [SetsRequiredMembers]
-        public MessageGetDto(ChatMessageEntity message, string userName)
+        public MessageGetDto(ChatMessageEntity message)
         {
             UserId = message.UserId;
-            UserName = userName; 
+            UserName = message.UserName; 
             WrittenAt = message.WrittenAt;
             Message = message.Message;
         }

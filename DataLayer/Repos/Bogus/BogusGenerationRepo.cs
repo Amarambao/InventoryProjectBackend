@@ -247,10 +247,13 @@ namespace DataLayer.Repos.Bogus
             {
                 faker.Random = new Randomizer(RandomNumberGenerator.GetInt32(int.MaxValue));
 
+                var pickedUser = faker.PickRandom(users);
+
                 messages.Add(new ChatMessageEntity
                 {
                     InventoryId = inventory.Id,
-                    UserId = faker.PickRandom(users).Id,
+                    UserId = pickedUser.Id,
+                    UserName = pickedUser.UserName ?? string.Empty,
                     WrittenAt = faker.Date.Between(DateTime.UtcNow.AddMonths(-1), DateTime.UtcNow),
                     Message = faker.Waffle().Text(1, false),
                 });
@@ -387,10 +390,10 @@ namespace DataLayer.Repos.Bogus
                         sb.Append($"{element.FixedTextValue ?? string.Empty}-");
                         break;
                     case CustomIdElementEnum.Random20Bit:
-                        sb.Append($"{Convert.ToBase64String(faker.Random.Bytes(20))}-");
+                        sb.Append($"{faker.Random.UInt(0, 1 << 20)}-");
                         break;
                     case CustomIdElementEnum.Random32Bit:
-                        sb.Append($"{Convert.ToBase64String(faker.Random.Bytes(32))}-");
+                        sb.Append($"{BitConverter.ToUInt32(faker.Random.Bytes(4))}-");
                         break;
                     case CustomIdElementEnum.Random6Digit:
                         sb.Append($"{faker.Random.Number(1000000)}-");

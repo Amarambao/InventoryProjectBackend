@@ -7,6 +7,7 @@ namespace CommonLayer.Models.Entity
     {
         public Guid InventoryId { get; set; }
         public required Guid UserId { get; set; }
+        public required string UserName { get; set; }
         public required DateTime WrittenAt { get; set; }
         public required string Message { get; set; }
 
@@ -15,10 +16,11 @@ namespace CommonLayer.Models.Entity
         public ChatMessageEntity() { }
 
         [SetsRequiredMembers]
-        public ChatMessageEntity(MessagePostDto dto, Guid userId)
+        public ChatMessageEntity(MessagePostDto dto, Guid userId, string? userName)
         {
             InventoryId = dto.InventoryId;
             UserId = userId;
+            UserName = userName ?? string.Empty;
             WrittenAt = DateTime.UtcNow;
             Message = dto.Message;
         }

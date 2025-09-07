@@ -27,7 +27,6 @@ namespace CommonLayer.Models.Entity
             NormalizedUserName = normalizeName;
             NormalizedEmail = normalizeEmail;
             EmailConfirmed = false;
-            ConcurrencyStamp = Guid.NewGuid().ToString();
             PhoneNumber = string.Empty;
             PhoneNumberConfirmed = true;
             TwoFactorEnabled = false;

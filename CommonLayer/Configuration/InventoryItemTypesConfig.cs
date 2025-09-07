@@ -22,11 +22,18 @@ namespace CommonLayer.Configuration
 
             builder.HasMany(x => x.CustomIdSequence)
                 .WithOne(x => x.InventoryItemType)
-                .HasForeignKey(x => new { x.ItemId, x.InventoryId });
+                .HasForeignKey(x => new { x.ItemId, x.InventoryId })
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(x => x.CustomDescriptionSequence)
+                .WithOne(x => x.InventoryItemType)
+                .HasForeignKey(x => new { x.ItemId, x.InventoryId })
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.StoredItems)
                 .WithOne(x => x.InventoryItemType)
-                .HasForeignKey(x => new { x.ItemId, x.InventoryId });
+                .HasForeignKey(x => new { x.ItemId, x.InventoryId })
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

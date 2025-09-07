@@ -2,6 +2,6 @@
 {
     public interface IInventoryItemTypesSrv
     {
-        Task ModifyInventoryItemsRangeAsync(Guid inventoryId, IEnumerable<string> itemNames);
+        Task UpdateInventoryItemTypesAsync(Guid inventoryId, IEnumerable<string> itemNames);
     }
 }

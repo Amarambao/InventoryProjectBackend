@@ -8,6 +8,7 @@ namespace CommonLayer.Models.Entity
         public Guid InventoryTypeId { get; set; }
         public string? Description { get; set; }
         public bool IsPublic { get; set; }
+        public byte[] ConcurrencyStamp { get; set; }
 
         public InventoryTypeEntity InventoryType { get; set; }
 

@@ -3,8 +3,10 @@ using CommonLayer.Extensions;
 using CommonLayer.Models.Dto.General;
 using CommonLayer.Models.Dto.User;
 using CommonLayer.Models.Entity;
+using DataLayer.Contexts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace BusinessLayer.Services
 {
@@ -12,13 +14,17 @@ namespace BusinessLayer.Services
     {
         private readonly UserManager<AppUserEntity> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
+        private readonly IInventorySrv _invSrv;
 
         public UserOperationsSrv(
             UserManager<AppUserEntity> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager)
+            RoleManager<IdentityRole<Guid>> roleManager,
+            IInventorySrv invSrv,
+            PostgreSQLContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _invSrv = invSrv;
         }
 
         public async Task<IEnumerable<AppUserGetDto>> GetAllWPaginationAsync(UserRequestDto dto)
@@ -58,32 +64,90 @@ namespace BusinessLayer.Services
             return result;
         }
 
-        public async Task<AppUserGetDto?> GetUserByIdAsync(Guid userId)
+        public async Task<ResultDto<AppUserGetDto>> GetUserByIdAsync(Guid userId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
-                return null;
+                return new(false, "User not found");
 
-            return new AppUserGetDto(user, await _userManager.IsInRoleAsync(user, "admin"));
+            return new(true, null, new AppUserGetDto(user, await _userManager.IsInRoleAsync(user, "admin")));
         }
 
-        public async Task ChangeUsersBlockingStatusAsync(ChangeUsersStatusDto dto)
+        public async Task<ResultDto> UpdateUserMainInfoAsync(UpdateUserMainInfoDto dto)
         {
-            var users = await _userManager.Users.Where(z => dto.UserIds.Contains(z.Id)).ToListAsync();
+            var user = await _userManager.FindByIdAsync(dto.Id.ToString());
+
+            if (user == null)
+                return new(false, "User not found");
+
+            if (user.ConcurrencyStamp != dto.ConcurrencyStamp)
+                return new(false, "User already changed. Update the page");
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName) && dto.FullName.Trim() != user.Name)
+            {
+                user.Name = dto.FullName;
+                user.NormalizedName = dto.FullName.CustomNormalize();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName.Trim() != user.UserName)
+            {
+                user.UserName = dto.UserName;
+                user.NormalizedUserName = _userManager.NormalizeName(dto.UserName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email.Trim() != user.Email)
+            {
+                user.Email = dto.Email;
+                user.Email = _userManager.NormalizeEmail(dto.Email);
+            }
+
+            var identityResult = await _userManager.UpdateAsync(user);
+
+            var sb = new StringBuilder();
+
+            if (!identityResult.Succeeded)
+                identityResult.Errors.Select(err => sb.Append($"{err.Description}\n"));
+
+            return new(identityResult.Succeeded, sb.ToString());
+        }
+
+        public async Task<ResultDto> ChangeUsersBlockingStatusAsync(ChangeUsersStatusDto dto)
+        {
+            var users = await _userManager.Users.Where(u => dto.UserIdAndStamp.Select(dto => dto.Id).Contains(u.Id)).ToListAsync();
+
+            var resultDto = new ResultDto() { IsSucceeded = true };
+            var sb = new StringBuilder();
 
             foreach (var user in users)
             {
+                if (user.ConcurrencyStamp != dto.UserIdAndStamp.FirstOrDefault(u => u.Id == user.Id)!.Value)
+                {
+                    resultDto.IsSucceeded = false;
+                    sb.Append("Some of the users have been modified\nPlease reload page.\n");
+                }
+
                 if (user.IsBlocked == dto.RequestedStatus)
                     continue;
 
                 user.IsBlocked = dto.RequestedStatus;
 
-                await _userManager.UpdateAsync(user);
+                var identityResult = await _userManager.UpdateAsync(user);
+
+                if (!identityResult.Succeeded)
+                    identityResult.Errors.Select(err => sb.Append($"{err.Description}\n"));
             }
+
+            if (!string.IsNullOrWhiteSpace(sb.ToString()))
+            {
+                resultDto.IsSucceeded = false;
+                resultDto.Error = sb.ToString();
+            }
+
+            return resultDto;
         }
 
-        public async Task<ResultDto?> ChangeUsersRoleStatusAsync(ChangeUsersStatusDto dto)
+        public async Task<ResultDto> ChangeUsersRoleStatusAsync(ChangeUsersStatusDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.RoleName))
                 return new(false, "Role name is empty");
@@ -92,46 +156,115 @@ namespace BusinessLayer.Services
             if (role is null)
                 return new(false, "Role not found");
 
-            var users = await _userManager.Users.Where(u => dto.UserIds.Contains(u.Id)).ToListAsync();
+            var users = await _userManager.Users.Where(u => dto.UserIdAndStamp.Select(dto => dto.Id).Contains(u.Id)).ToListAsync();
             if (!users.Any())
                 return new(false, "No users found");
 
-            if (dto.RequestedStatus)
-                await AddUsersToRoleAsync(users, dto.RoleName);
-            else
-                await RemoveUsersFromRoleAsync(users, dto.RoleName);
+            var validUsers = users
+                .Where(u => dto.UserIdAndStamp.FirstOrDefault(x => x.Id == u.Id)?.Value == u.ConcurrencyStamp)
+                .ToList();
 
-            return null;
+            var result = new ResultDto() { IsSucceeded = true };
+
+            if (validUsers.Count != users.Count)
+                result = new(false, "Some users were changed\n");
+
+            Func<List<AppUserEntity>, string, Task<ResultDto>> roleOperation = dto.RequestedStatus ? AddUsersToRoleAsync : RemoveUsersFromRoleAsync;
+
+            var operationResult = await roleOperation(validUsers, dto.RoleName);
+
+            if (!operationResult.IsSucceeded)
+                result.Error += operationResult.Error;
+
+            return result;
         }
 
-        public async Task DeleteUsersAsync(IEnumerable<Guid> userIds)
+        public async Task<ResultDto> DeleteUsersAsync(IEnumerable<Guid> userIds)
         {
-            var users = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToListAsync();
+            var result = new ResultDto() { IsSucceeded = true };
+            var sb = new StringBuilder();
 
-            foreach (var user in users)
-                await _userManager.DeleteAsync(user);
-        }
+            var users = await _userManager.Users
+                .Include(u => u.UserInventories)
+                .Where(u => userIds.Contains(u.Id))
+                .ToListAsync();
 
-        private async Task AddUsersToRoleAsync(IEnumerable<AppUserEntity> users, string roleName)
-        {
             foreach (var user in users)
             {
-                if (await _userManager.IsInRoleAsync(user, "admin"))
-                    continue;
+                if (user.UserInventories is not null && user.UserInventories.Any())
+                {
+                    var creatorInventoryIds = user.UserInventories
+                        .Where(ui => ui.IsCreator)
+                        .Select(ui => ui.InventoryId)
+                        .ToList();
 
-                await _userManager.AddToRoleAsync(user, roleName);
+                    if (creatorInventoryIds.Count > 0)
+                        await _invSrv.RemoveInventoryRangeAsync(creatorInventoryIds);
+                }
+
+                var identityResult = await _userManager.DeleteAsync(user);
+
+                if (!identityResult.Succeeded)
+                    identityResult.Errors.Select(err => sb.Append($"{err.Description}\n"));
             }
+
+            if (!string.IsNullOrWhiteSpace(sb.ToString()))
+            {
+                result.IsSucceeded = false;
+                result.Error = sb.ToString();
+            }
+
+            return result;
         }
 
-        private async Task RemoveUsersFromRoleAsync(IEnumerable<AppUserEntity> users, string roleName)
+        private async Task<ResultDto> AddUsersToRoleAsync(IEnumerable<AppUserEntity> users, string roleName)
         {
+            var result = new ResultDto() { IsSucceeded = true };
+            var sb = new StringBuilder();
+
             foreach (var user in users)
             {
-                if (!await _userManager.IsInRoleAsync(user, "admin"))
+                if (await _userManager.IsInRoleAsync(user, roleName))
                     continue;
 
-                await _userManager.RemoveFromRoleAsync(user, roleName);
+                var identityResult = await _userManager.AddToRoleAsync(user, roleName);
+
+                if (!identityResult.Succeeded)
+                    identityResult.Errors.Select(err => sb.Append($"{err.Description}\n"));
             }
+
+            if (!string.IsNullOrWhiteSpace(sb.ToString()))
+            {
+                result.IsSucceeded = false;
+                result.Error = sb.ToString();
+            }
+
+            return result;
+        }
+
+        private async Task<ResultDto> RemoveUsersFromRoleAsync(IEnumerable<AppUserEntity> users, string roleName)
+        {
+            var result = new ResultDto() { IsSucceeded = true };
+            var sb = new StringBuilder();
+
+            foreach (var user in users)
+            {
+                if (!await _userManager.IsInRoleAsync(user, roleName))
+                    continue;
+
+                var identityResult = await _userManager.RemoveFromRoleAsync(user, roleName);
+
+                if (!identityResult.Succeeded)
+                    identityResult.Errors.Select(err => sb.Append($"{err.Description}\n"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(sb.ToString()))
+            {
+                result.IsSucceeded = false;
+                result.Error = sb.ToString();
+            }
+
+            return result;
         }
     }
 }

@@ -12,25 +12,32 @@ namespace CommonLayer.Configuration
 
             builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.ConcurrencyStamp)
+                .IsConcurrencyToken();
+
             builder.HasOne(x => x.InventoryType)
                 .WithMany(x => x.Inventories)
                 .HasForeignKey(x => x.InventoryTypeId);
             
             builder.HasMany(x => x.InventoryEditors)
                 .WithOne(x => x.Inventory)
-                .HasForeignKey(x => x.InventoryId);
+                .HasForeignKey(x => x.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.InventoryItemTypes)
                 .WithOne(x => x.Inventory)
-                .HasForeignKey(x => x.InventoryId);
+                .HasForeignKey(x => x.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.InventoryTags)
                 .WithOne(x => x.Inventory)
-                .HasForeignKey(x => x.InventoryId);
+                .HasForeignKey(x => x.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.ChatMessages)
                 .WithOne(x => x.Inventory)
-                .HasForeignKey(x => x.InventoryId);
+                .HasForeignKey(x => x.InventoryId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

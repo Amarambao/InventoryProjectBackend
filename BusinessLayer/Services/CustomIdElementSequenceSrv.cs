@@ -11,83 +11,46 @@ namespace BusinessLayer.Services
     public class CustomIdElementSequenceSrv : ICustomIdElementSequenceSrv
     {
         private readonly ICustomIdElementSequenceRepo _customIdElementSequenceRepo;
-        private readonly IStoredItemsRepo _storedItemsRepo;
 
-        public CustomIdElementSequenceSrv(
-            ICustomIdElementSequenceRepo customIdElementSequenceRepo,
-            IStoredItemsRepo storedItemsRepo)
+        public CustomIdElementSequenceSrv(ICustomIdElementSequenceRepo customIdElementSequenceRepo)
         {
             _customIdElementSequenceRepo = customIdElementSequenceRepo;
-            _storedItemsRepo = storedItemsRepo;
         }
 
-        public async Task ModifyCustomIdSequenceAsync(Guid inventoryId, Guid itemId, List<CustomIdElementDto> sequenceDto)
+        public async Task UpdateCustomIdSequenceAsync(Guid inventoryId, Guid itemId, List<CustomIdElementDto> sequenceDto)
         {
-            var filteredSequence = new List<CustomIdElementDto>();
-            var seenUIntSequence = false;
+            var sequenceEntitiesUpdate = new List<CustomIdElementSequenceEntity>();
 
-            foreach (var dto in sequenceDto)
+            var incrementValue = 0;
+
+            if (sequenceDto.Any(s => s.ElementType == CustomIdElementEnum.UIntSequence))
             {
-                if (dto.ElementType == CustomIdElementEnum.UIntSequence)
-                    if (seenUIntSequence)
-                        continue; 
-                    seenUIntSequence = true;
-
-                filteredSequence.Add(dto);
+                var incrementElement = await _customIdElementSequenceRepo.GetMaxUIntElementStoredAsync(inventoryId, itemId);
+                if (incrementElement is not null)
+                    incrementValue = incrementElement.IncrementValue!.Value;
             }
 
-            var existingSequence = (await _customIdElementSequenceRepo.GetItemSequenceAsync(inventoryId, itemId))
-                .ToDictionary(s => (s.ElementType, s.FixedTextValue), s => s);
-
-            var updatedEntities = new List<CustomIdElementSequenceEntity>();
-            var newEntities = new List<CustomIdElementSequenceEntity>();
-            var seenKeys = new HashSet<(CustomIdElementEnum, string?)>();
-
-            for (var i = 0; i < filteredSequence.Count; i++)
+            for (int i = 0; i < sequenceDto.Count; i++)
             {
-                var key = (filteredSequence[i].ElementType, filteredSequence[i].ElementType == CustomIdElementEnum.FixedText
-                    ? filteredSequence[i].FixedTextValue : null);
-                seenKeys.Add(key);
-
-                if (existingSequence.TryGetValue(key, out var existing))
+                sequenceEntitiesUpdate.Add(new CustomIdElementSequenceEntity()
                 {
-                    if (existing.Order != i)
-                    {
-                        existing.Order = i;
-                        updatedEntities.Add(existing);
-                    }
-                }
-                else
-                {
-                    newEntities.Add(new CustomIdElementSequenceEntity
-                    {
-                        InventoryId = inventoryId,
-                        ItemId = itemId,
-                        ElementType = filteredSequence[i].ElementType,
-                        FixedTextValue = key.Item2,
-                        Order = i
-                    });
-                }
+                    Id = Guid.NewGuid(),
+                    InventoryId = inventoryId,
+                    ItemId = itemId,
+                    ElementType = sequenceDto[i].ElementType,
+                    Order = i,
+                    FixedTextValue = sequenceDto[i].ElementType == CustomIdElementEnum.FixedText ? sequenceDto[i].FixedTextValue : null,
+                    IncrementValue = sequenceDto[i].ElementType == CustomIdElementEnum.UIntSequence ? incrementValue : null,
+                });
             }
 
-            var entitiesToRemove = existingSequence
-                .Where(kvp => !seenKeys.Contains(kvp.Key))
-                .Select(kvp => kvp.Value);
-
-            if (newEntities.Any())
-                await _customIdElementSequenceRepo.CreateSequenceAsync(newEntities);
-
-            if (updatedEntities.Any())
-                await _customIdElementSequenceRepo.UpdateRangeAsync(updatedEntities);
-
-            if (entitiesToRemove.Any())
-                await _customIdElementSequenceRepo.RemoveRangeAsync(entitiesToRemove);
+            await _customIdElementSequenceRepo.UpdateSequenceAsync(inventoryId, itemId, sequenceEntitiesUpdate);
         }
 
         public async Task<List<CustomIdElementDto>> GetItemSequenceAsync(Guid inventoryId, Guid itemId)
         {
             var result = await _customIdElementSequenceRepo.GetItemSequenceAsync(inventoryId, itemId);
-            
+
             if (!result.Any())
                 return new List<CustomIdElementDto>();
 
@@ -95,7 +58,20 @@ namespace BusinessLayer.Services
             {
                 ElementType = s.ElementType,
                 FixedTextValue = s.FixedTextValue,
+                IncrementValue = s.IncrementValue,
             }).ToList();
+        }
+
+        public async Task UpdateIncrementValueAsync(Guid inventoryId, Guid itemId)
+        {
+            var uintElement = await _customIdElementSequenceRepo.GetMaxUIntElementStoredAsync(inventoryId, itemId);
+
+            if (uintElement is null)
+                return;
+
+            uintElement.IncrementValue++;
+
+            await _customIdElementSequenceRepo.UpdateRangeAsync([uintElement]);
         }
 
         public async Task<string> GenerateCustomIdAsync(Guid inventoryId, Guid itemId)
@@ -103,7 +79,15 @@ namespace BusinessLayer.Services
             var elements = await _customIdElementSequenceRepo.GetItemSequenceAsync(inventoryId, itemId);
             var sb = new StringBuilder();
 
-            var UIntSequenceValue = $"{await _storedItemsRepo.GetMaxUIntStoredAsync(inventoryId, itemId)}-";
+            var incrementValue = 0;
+            if (elements.Any(e => e.ElementType == CustomIdElementEnum.UIntSequence))
+            {
+                var uintElement = await _customIdElementSequenceRepo.GetMaxUIntElementStoredAsync(inventoryId, itemId);
+
+                if (uintElement is not null)
+                    incrementValue = uintElement.IncrementValue!.Value;
+            }
+
             foreach (var element in elements)
             {
                 switch (element.ElementType)
@@ -112,16 +96,16 @@ namespace BusinessLayer.Services
                         sb.Append($"{element.FixedTextValue ?? string.Empty}-");
                         break;
                     case CustomIdElementEnum.Random20Bit:
-                        sb.Append($"{Convert.ToBase64String(RandomNumberGenerator.GetBytes(20))}-");
+                        sb.Append($"{RandomNumberGenerator.GetInt32(1 << 20)}-");
                         break;
                     case CustomIdElementEnum.Random32Bit:
-                        sb.Append($"{Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))}-");
+                        sb.Append($"{BitConverter.ToUInt32(RandomNumberGenerator.GetBytes(4))}-");
                         break;
                     case CustomIdElementEnum.Random6Digit:
-                        sb.Append($"{RandomNumberGenerator.GetInt32(1000000)}-");
+                        sb.Append($"{RandomNumberWithMinValue(99999, 1000000)}-");
                         break;
                     case CustomIdElementEnum.Random9Digit:
-                        sb.Append($"{RandomNumberGenerator.GetInt32(1000000000)}-");
+                        sb.Append($"{RandomNumberWithMinValue(99999999, 1000000000)}-");
                         break;
                     case CustomIdElementEnum.Guid:
                         sb.Append($"{Guid.NewGuid()}-");
@@ -130,11 +114,24 @@ namespace BusinessLayer.Services
                         sb.Append($"{DateTime.UtcNow.ToShortTimeString()}-");
                         break;
                     case CustomIdElementEnum.UIntSequence:
-                        sb.Append(UIntSequenceValue);
+                        sb.Append($"{incrementValue + 1}-");
                         break;
                 }
             }
             return sb.ToString().Trim('-');
+        }
+
+        private int RandomNumberWithMinValue(int minExclusive, int maxExclusive)
+        {
+            if (minExclusive > maxExclusive)
+                return 0;
+
+            int result;
+            do
+                result = RandomNumberGenerator.GetInt32(maxExclusive);
+            while (result <= minExclusive);
+
+            return result;
         }
     }
 }

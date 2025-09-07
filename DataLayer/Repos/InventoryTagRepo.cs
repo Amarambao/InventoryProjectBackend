@@ -14,22 +14,16 @@ namespace DataLayer.Repos
             _context = context;
         }
 
-        public async Task CreateRangeAsync(IEnumerable<InventoryTagEntity> inventoryTags)
+        public async Task UpdateInventoryTagsAsync(Guid inventoryId, IEnumerable<InventoryTagEntity> newInventoryTags)
         {
-            await _context.InventoryTags.AddRangeAsync(inventoryTags);
-            await _context.SaveChangesAsync();
-        }
-
-        public Task<List<InventoryTagEntity>> GetRangeAsync(Guid inventoryId)
-            => _context.InventoryTags
-                .AsNoTracking()
-                .Include(it => it.Tag)
-                .Where(it => it.InventoryId == inventoryId)
+            var inventoryTags = await _context.InventoryTags
+                .Where(i => i.InventoryId == inventoryId)
                 .ToListAsync();
 
-        public async Task RemoveRangeAsync(IEnumerable<InventoryTagEntity> inventoryTags)
-        {
             _context.InventoryTags.RemoveRange(inventoryTags);
+
+            await _context.InventoryTags.AddRangeAsync(newInventoryTags);
+
             await _context.SaveChangesAsync();
         }
     }

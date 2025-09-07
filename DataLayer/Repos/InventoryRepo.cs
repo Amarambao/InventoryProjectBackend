@@ -58,7 +58,7 @@ namespace DataLayer.Repos
                 .ThenInclude(y => y.User)
             .FirstOrDefaultAsync(x => x.Id == itemId);
 
-        public async Task<ResultDto?> UpdateAsync(InventoryUpdateDto dto)
+        public async Task<ResultDto> UpdateAsync(InventoryUpdateDto dto)
         {
             var inventory = await _context.Inventories
                 .Include(i => i.InventoryType)
@@ -67,12 +67,15 @@ namespace DataLayer.Repos
             if (inventory is null)
                 return new(false, "Inventory not found");
 
+            if (Convert.ToBase64String(inventory.ConcurrencyStamp) != dto.ConcurrencyStamp)
+                return new(false, "Inventory is changed. Please update the page");
+
             if (inventory.IsPublic != dto.IsPublic)
             {
                 inventory.IsPublic = dto.IsPublic;
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.Name) && inventory.InventoryType.Name != dto.Name.Trim())
+            if (!string.IsNullOrWhiteSpace(dto.Name) && inventory.InventoryType.Name != dto.Name)
             {
                 var invType = await _context.InventoryType.FirstOrDefaultAsync(it => it.NormalizedName == dto.Name.CustomNormalize());
 
@@ -85,13 +88,14 @@ namespace DataLayer.Repos
                 inventory.InventoryTypeId = invType.Id;
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.Description))
+            if (!string.IsNullOrWhiteSpace(dto.Description) && inventory.Description != dto.Description)
             {
                 inventory.Description = dto.Description;
             }
 
             await _context.SaveChangesAsync();
-            return null;
+
+            return new(true);
         }
 
         public async Task RemoveRangeAsync(IEnumerable<Guid> inventoryIds)

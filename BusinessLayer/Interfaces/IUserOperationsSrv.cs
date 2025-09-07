@@ -6,9 +6,10 @@ namespace BusinessLayer.Interfaces
     public interface IUserOperationsSrv
     {
         Task<IEnumerable<AppUserGetDto>> GetAllWPaginationAsync(UserRequestDto dto);
-        Task<AppUserGetDto?> GetUserByIdAsync(Guid userId);
-        Task ChangeUsersBlockingStatusAsync(ChangeUsersStatusDto dto);
-        Task<ResultDto?> ChangeUsersRoleStatusAsync(ChangeUsersStatusDto dto);
-        Task DeleteUsersAsync(IEnumerable<Guid> userIds);
+        Task<ResultDto<AppUserGetDto>> GetUserByIdAsync(Guid userId);
+        Task<ResultDto> UpdateUserMainInfoAsync(UpdateUserMainInfoDto dto);
+        Task<ResultDto> ChangeUsersBlockingStatusAsync(ChangeUsersStatusDto dto);
+        Task<ResultDto> ChangeUsersRoleStatusAsync(ChangeUsersStatusDto dto);
+        Task<ResultDto> DeleteUsersAsync(IEnumerable<Guid> userIds);
     }
 }

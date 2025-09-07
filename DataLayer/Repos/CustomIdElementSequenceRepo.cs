@@ -1,4 +1,5 @@
-﻿using CommonLayer.Models.Entity;
+﻿using CommonLayer.Enum;
+using CommonLayer.Models.Entity;
 using DataLayer.Contexts;
 using DataLayer.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,27 +15,34 @@ namespace DataLayer.Repos
             _context = context;
         }
 
-        public async Task CreateSequenceAsync(IEnumerable<CustomIdElementSequenceEntity> sequence)
+        public async Task UpdateSequenceAsync(Guid inventoryId, Guid itemId, IEnumerable<CustomIdElementSequenceEntity> newSequence)
         {
-            await _context.CustomIdSequence.AddRangeAsync(sequence);
+            var sequence = await _context.CustomIdSequence
+                .Where(i => i.InventoryId == inventoryId && i.ItemId == itemId)
+                .ToListAsync();
+
+            _context.CustomIdSequence.RemoveRange(sequence);
+
+            await _context.CustomIdSequence.AddRangeAsync(newSequence);
+
             await _context.SaveChangesAsync();
         }
 
         public Task<List<CustomIdElementSequenceEntity>> GetItemSequenceAsync(Guid inventoryId, Guid itemId)
             => _context.CustomIdSequence
+                .AsNoTracking()
                 .OrderBy(i => i.Order)
                 .Where(i => i.InventoryId == inventoryId && i.ItemId == itemId)
                 .ToListAsync();
 
-        public async Task UpdateRangeAsync(IEnumerable<CustomIdElementSequenceEntity> storedItems)
-        {
-            _context.UpdateRange(storedItems);
-            await _context.SaveChangesAsync();
-        }
+        public Task<CustomIdElementSequenceEntity?> GetMaxUIntElementStoredAsync(Guid inventoryId, Guid itemId)
+            => _context.CustomIdSequence
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.InventoryId == inventoryId && s.ItemId == itemId && s.ElementType == CustomIdElementEnum.UIntSequence);
 
-        public async Task RemoveRangeAsync(IEnumerable<CustomIdElementSequenceEntity> storedItems)
+        public async Task UpdateRangeAsync(IEnumerable<CustomIdElementSequenceEntity> customIdSequence)
         {
-            _context.RemoveRange(storedItems);
+            _context.CustomIdSequence.UpdateRange(customIdSequence);
             await _context.SaveChangesAsync();
         }
     }

@@ -39,7 +39,7 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            await _customIdElementSequenceSrv.ModifyCustomIdSequenceAsync(dto.InventoryId, dto.ItemId, dto.Sequence);
+            await _customIdElementSequenceSrv.UpdateCustomIdSequenceAsync(dto.InventoryId, dto.ItemId, dto.Sequence);
 
             return Ok(null);
         }

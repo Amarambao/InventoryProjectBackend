@@ -8,6 +8,8 @@ namespace CommonLayer.Configuration
     {
         public void Configure(EntityTypeBuilder<CustomIdElementSequenceEntity> builder)
         {
+            builder.ToTable("custom_id_sequence");
+
             builder.HasKey(x => x.Id);
 
             builder.HasIndex(x => new { x.InventoryId, x.ItemId })

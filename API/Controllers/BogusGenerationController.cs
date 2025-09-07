@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
-#if DEBUG
     [Route("api/[controller]")]
     [ApiController]
     public class BogusGenerationController : ControllerBase
@@ -32,5 +31,4 @@ namespace API.Controllers
             return Ok();
         }
     }
-#endif
 }

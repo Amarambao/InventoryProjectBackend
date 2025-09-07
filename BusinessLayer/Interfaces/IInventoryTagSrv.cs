@@ -2,6 +2,6 @@
 {
     public interface IInventoryTagSrv
     {
-        Task ModifyInventoryTagsRangeAsync(Guid inventoryId, IEnumerable<string> tagsRequest);
+        Task UpdateInventoryTagsAsync(Guid inventoryId, IEnumerable<string> tagsRequest);
     }
 }

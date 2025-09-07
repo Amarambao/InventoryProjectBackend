@@ -11,6 +11,7 @@ namespace CommonLayer.Models.Dto.Inventory
         public string? Description { get; set; }
         public Guid CreatorId { get; set; }
         public required string CreatorName { get; set; }
+        public required string ConcurrencyStamp { get; set; }
         public IEnumerable<string> Tags { get; set; }
 
         public InventoryGetFullDto() { }
@@ -26,6 +27,7 @@ namespace CommonLayer.Models.Dto.Inventory
             Description = inventory.Description;
             CreatorId = creator.Id;
             CreatorName = $"{creator.Name}";
+            ConcurrencyStamp = Convert.ToBase64String(inventory.ConcurrencyStamp);
             Tags = inventory.InventoryTags.Select(t => t.Tag.Name);
         }
     }

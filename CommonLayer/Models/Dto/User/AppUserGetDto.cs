@@ -10,6 +10,7 @@ namespace CommonLayer.Models.Dto.User
         public string Email { get; set; }
         public bool IsBlocked { get; set; }
         public bool IsAdmin { get; set; }
+        public string ConcurrencyStamp { get; set; }
 
         public AppUserGetDto() { }
 
@@ -21,6 +22,7 @@ namespace CommonLayer.Models.Dto.User
             Email = user.Email!;
             IsBlocked = user.IsBlocked;
             IsAdmin = isAdmin;
+            ConcurrencyStamp = user.ConcurrencyStamp;
         }
     }
 }

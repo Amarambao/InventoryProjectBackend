@@ -41,11 +41,11 @@ namespace BusinessLayer.Services
 
             await _itemTypeSrv.CreateNonExistingAsync(dto.ItemNames);
 
-            await _invItemSrv.ModifyInventoryItemsRangeAsync(inventoryEntity.Id, dto.ItemNames);
+            await _invItemSrv.UpdateInventoryItemTypesAsync(inventoryEntity.Id, dto.ItemNames);
 
             await _tagSrv.CreateNonExistingAsync(dto.Tags);
 
-            await _invTagSrv.ModifyInventoryTagsRangeAsync(inventoryEntity.Id, dto.Tags);
+            await _invTagSrv.UpdateInventoryTagsAsync(inventoryEntity.Id, dto.Tags);
 
             return inventoryEntity.Id;
         }
@@ -63,7 +63,7 @@ namespace BusinessLayer.Services
             return new(true, null, new(inventory));
         }
 
-        public async Task<ResultDto?> UpdateInventoryAsync(InventoryUpdateDto dto)
+        public async Task<ResultDto> UpdateInventoryAsync(InventoryUpdateDto dto)
             => await _invRepo.UpdateAsync(dto);
 
         public Task RemoveInventoryRangeAsync(IEnumerable<Guid> inventoryIds)

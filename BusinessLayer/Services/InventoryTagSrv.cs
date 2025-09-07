@@ -18,35 +18,23 @@ namespace BusinessLayer.Services
             _tagSrv = tagSrv;
         }
 
-        public async Task ModifyInventoryTagsRangeAsync(Guid inventoryId, IEnumerable<string> tagsRequest)
+        public async Task UpdateInventoryTagsAsync(Guid inventoryId, IEnumerable<string> tagsRequest)
         {
-            var inventoryTagsEnt = await _invTagRepo.GetRangeAsync(inventoryId: inventoryId);
-            var inventoryTags = inventoryTagsEnt.ToDictionary(i => i.Tag.NormalizedName);
-
             await _tagSrv.CreateNonExistingAsync(tagsRequest);
 
-            var tags = await _tagSrv.GetTagRangeAsync(tags: tagsRequest);
+            var tags = (await _tagSrv.GetTagRangeAsync(tags: tagsRequest)).ToDictionary(i => i.NormalizedName, i => i.Id);
+            
+            var inventoryTagsToUpgrade = tagsRequest
+                .Select(r => r.CustomNormalize())
+                .Where(n => tags.ContainsKey(n))
+                .Select(n => new InventoryTagEntity
+                {
+                    InventoryId = inventoryId,
+                    TagId = tags[n]
+                })
+                .ToList();
 
-            var toCreate = new List<InventoryTagEntity>();
-            var toRemove = new Dictionary<string, InventoryTagEntity>(inventoryTags);
-
-            foreach (var name in tagsRequest)
-            {
-                if (inventoryTags.TryGetValue(name.CustomNormalize(), out var existing))
-                    toRemove.Remove(existing.Tag.NormalizedName);
-                else
-                    toCreate.Add(new InventoryTagEntity
-                    {
-                        InventoryId = inventoryId,
-                        TagId = tags.First(i => i.NormalizedName == name.CustomNormalize()).Id,
-                    });
-            }
-
-            if (toCreate.Any())
-                await _invTagRepo.CreateRangeAsync(toCreate);
-
-            if (toRemove.Any())
-                await _invTagRepo.RemoveRangeAsync(toRemove.Values);
+            await _invTagRepo.UpdateInventoryTagsAsync(inventoryId, inventoryTagsToUpgrade);
         }
     }
 }

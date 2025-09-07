@@ -33,7 +33,7 @@ namespace API.Controllers
 
         [HttpGet("get-my-info")]
         [Authorize]
-        public async Task<ActionResult<AppUserGetDto?>> GetMyInfoAsync()
+        public async Task<ActionResult<ResultDto<AppUserGetDto>>> GetMyInfoAsync()
         {
             var result = await _userOpSrv.GetUserByIdAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
 
@@ -42,37 +42,46 @@ namespace API.Controllers
 
         [HttpGet("get-by-id")]
         [AllowAnonymous]
-        public async Task<ActionResult<AppUserGetDto?>> GetByIdAsync([FromQuery] Guid userId)
+        public async Task<ActionResult<ResultDto<AppUserGetDto>>> GetByIdAsync([FromQuery] Guid userId)
         {
             var result = await _userOpSrv.GetUserByIdAsync(userId);
 
             return Ok(result);
         }
 
-        [HttpPost("change-users-blocking-status")]
-        [Authorize(Roles = "admin")]
-        public async Task<ActionResult<ResultDto?>> ChangeUsersBlockingStatusAsync([FromBody] ChangeUsersStatusDto dto)
+        [HttpPost("update-main-info")]
+        [Authorize]
+        public async Task<ActionResult<ResultDto>> UpdateUserMainInfoAsync([FromBody] UpdateUserMainInfoDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var err = new ResultDto(false, "You are blocked");
-                return BadRequest(err);
-            }
+                return BadRequest(new ResultDto(false, "You are blocked"));
 
-            await _userOpSrv.ChangeUsersBlockingStatusAsync(dto);
+            if (Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!) != dto.Id || !User.IsInRole("admin"))
+                return Ok(new ResultDto(false, "You are not allowed to edit this user"));
 
-            return Ok(null);
+            var result = await _userOpSrv.UpdateUserMainInfoAsync(dto);
+
+            return Ok(result);
+        }
+
+        [HttpPost("change-users-blocking-status")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ResultDto>> ChangeUsersBlockingStatusAsync([FromBody] ChangeUsersStatusDto dto)
+        {
+            if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
+                return BadRequest(new ResultDto(false, "You are blocked"));
+
+            var result = await _userOpSrv.ChangeUsersBlockingStatusAsync(dto);
+
+            return Ok(result);
         }
 
         [HttpPost("change-users-role-status")]
         [Authorize(Roles = "admin")]
-        public async Task<ActionResult<ResultDto?>> ChangeUsersRoleStatusAsync([FromBody] ChangeUsersStatusDto dto)
+        public async Task<ActionResult<ResultDto>> ChangeUsersRoleStatusAsync([FromBody] ChangeUsersStatusDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var err = new ResultDto(false, "You are blocked");
-                return BadRequest(err);
-            }
+                return BadRequest(new ResultDto(false, "You are blocked"));
 
             var result = await _userOpSrv.ChangeUsersRoleStatusAsync(dto);
 
@@ -81,17 +90,14 @@ namespace API.Controllers
 
         [HttpDelete("delete-selected")]
         [Authorize(Roles = "admin")]
-        public async Task<ActionResult<ResultDto?>> DeleteUsersAsync([FromQuery] IEnumerable<Guid> userIds)
+        public async Task<ActionResult<ResultDto>> DeleteUsersAsync([FromQuery] IEnumerable<Guid> userIds)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var err = new ResultDto(false, "You are blocked");
-                return BadRequest(err);
-            }
+                return BadRequest(new ResultDto(false, "You are blocked"));
 
-            await _userOpSrv.DeleteUsersAsync(userIds);
+            var result = await _userOpSrv.DeleteUsersAsync(userIds);
 
-            return Ok(null);
+            return Ok(result);
         }
     }
 }

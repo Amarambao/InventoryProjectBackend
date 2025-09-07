@@ -8,6 +8,7 @@
         public InventoryEntity Inventory { get; set; }
         public ItemTypeEntity Item { get; set; }
         public List<CustomIdElementSequenceEntity> CustomIdSequence { get; set; }
+        public List<CustomDescriptionSequenceEntity> CustomDescriptionSequence { get; set; }
         public List<StoredItemsEntity> StoredItems { get; set; }
     }
 }

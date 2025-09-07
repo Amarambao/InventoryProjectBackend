@@ -19,7 +19,7 @@ namespace DataLayer.Repos
                 query = query.Where(x => x.InventoryItemTypes!.Any(x => x.InventoryId == inventoryId));
 
             if (itemTypes is not null && itemTypes.Any())
-                query = query.Where(x => itemTypes.Select(x => x.CustomNormalize()).Contains(x.NormalizedName));
+                query = query.Where(x => itemTypes.Select(x => x.CustomNormalize()).ToHashSet().Contains(x.NormalizedName));
 
             return query.ToListAsync();
         }

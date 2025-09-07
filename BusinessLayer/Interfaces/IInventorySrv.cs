@@ -8,7 +8,7 @@ namespace BusinessLayer.Interfaces
         Task<Guid> CreateInventoryAsync(InventoryCreateDto dto, Guid creatorId);
         Task<IEnumerable<InventoryGetLiteDto>> GetInventoriesLiteAsync(InventoryRequestDto dto);
         Task<ResultDto<InventoryGetFullDto>> GetInventoryFullAsync(Guid inventoryId);
-        Task<ResultDto?> UpdateInventoryAsync(InventoryUpdateDto dto);
+        Task<ResultDto> UpdateInventoryAsync(InventoryUpdateDto dto);
         Task RemoveInventoryRangeAsync(IEnumerable<Guid> inventoryIds);
     }
 }

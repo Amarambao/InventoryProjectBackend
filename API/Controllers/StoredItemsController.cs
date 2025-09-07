@@ -24,7 +24,7 @@ namespace API.Controllers
 
         [HttpPost("add")]
         [Authorize]
-        public async Task<ActionResult<AddItemDto?>> AddItemAsync([FromBody] AddItemDto dto)
+        public async Task<ActionResult<ResultDto<AddItemDto?>>> AddItemAsync([FromBody] AddItemDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
             {
@@ -39,7 +39,7 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            var result = await _storedItemsSrv.AddItemAsync(dto);
+            var result = await _storedItemsSrv.AddItemAsync(dto, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
 
             return Ok(result);
         }
@@ -51,7 +51,16 @@ namespace API.Controllers
             if (!dto.InventoryId.HasValue)
                 return Ok(new());
 
-            var result = await _storedItemsSrv.GetAllWPagination(dto);
+            var result = await _storedItemsSrv.GetAllWPaginationAsync(dto);
+
+            return Ok(result);
+        }
+
+        [HttpGet("get-full")]
+        [AllowAnonymous]
+        public async Task<ActionResult<StoredItemGetFullDto>> GetFullInfoAsync([FromQuery] Guid itemId)
+        {
+            var result = await _storedItemsSrv.GetFullInfoAsync(itemId);
 
             return Ok(result);
         }

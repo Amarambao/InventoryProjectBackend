@@ -5,8 +5,9 @@ namespace BusinessLayer.Interfaces
 {
     public interface IStoredItemsSrv
     {
-        Task<AddItemDto?> AddItemAsync(AddItemDto dto);
-        Task<IEnumerable<StoredItemGetAllDto>> GetAllWPagination(PaginationRequest dto);
+        Task<ResultDto<AddItemDto?>> AddItemAsync(AddItemDto dto, Guid creatorId);
+        Task<IEnumerable<StoredItemGetAllDto>> GetAllWPaginationAsync(PaginationRequest dto);
+        Task<StoredItemGetFullDto?> GetFullInfoAsync(Guid itemId);
         Task RemoveRangeAsync(IEnumerable<Guid> storedItemIds);
     }
 }

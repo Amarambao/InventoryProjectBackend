@@ -18,6 +18,11 @@ namespace CommonLayer.Configuration
             builder.HasOne(x => x.InventoryItemType)
                 .WithMany(x => x.StoredItems)
                 .HasForeignKey(x => new { x.ItemId, x.InventoryId });
+
+            builder.HasMany(x => x.StoredItemDescriptions)
+                .WithOne(x => x.StoredItem)
+                .HasForeignKey(x => x.StoredItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

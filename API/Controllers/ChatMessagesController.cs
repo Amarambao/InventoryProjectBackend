@@ -27,20 +27,16 @@ namespace API.Controllers
         [Authorize]
         public async Task<ActionResult<ResultDto?>> CreateMessageAsync([FromBody] MessagePostDto dto)
         {
-            if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            if (!(await _checkSrv.IsUserInventoryEditorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), dto.InventoryId)
+            if (await _checkSrv.CheckUserStatus(userId))
+                return BadRequest(new ResultDto(false, "You are blocked"));
+
+            if (!(await _checkSrv.IsUserInventoryEditorAsync(userId, dto.InventoryId)
                 || User.IsInRole("admin")))
-            {
-                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
-                return Ok(checkResult);
-            }
+                return Ok(new ResultDto(false, "You are not allowed to edit inventory"));
 
-            await _chatMessagesSrv.CreateMessageAsync(dto, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+            await _chatMessagesSrv.CreateMessageAsync(dto, userId);
 
             return Ok();
         }
@@ -58,18 +54,14 @@ namespace API.Controllers
         [Authorize]
         public async Task<ActionResult<ResultDto<IEnumerable<MessageGetDto>>>> RemoveMessageRangeAsync([FromQuery] Guid inventoryId, IEnumerable<string> dateTimes)
         {
-            if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            if (!(await _checkSrv.IsInventoryCreatorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), [inventoryId])
+            if (await _checkSrv.CheckUserStatus(userId))
+                return BadRequest(new ResultDto(false, "You are blocked"));
+
+            if (!(await _checkSrv.IsInventoryCreatorAsync(userId, [inventoryId])
                 || User.IsInRole("admin")))
-            {
-                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
-                return Ok(checkResult);
-            }
+                return Ok(new ResultDto(false, "You are not allowed to edit inventory"));
 
             await _chatMessagesSrv.RemoveMessageRangeAsync(dateTimes
                 .Select(dt => DateTime.TryParse(dt, out var parsed) ? parsed : (DateTime?)null)

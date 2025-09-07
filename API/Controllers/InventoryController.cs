@@ -27,10 +27,7 @@ namespace API.Controllers
         public async Task<ActionResult<ResultDto<Guid>>> CreateInventoryAsync([FromBody] InventoryCreateDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto<Guid>(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+                return BadRequest(new ResultDto<Guid>(false, "You are blocked"));
 
             var inventoryId = await _invSrv.CreateInventoryAsync(dto, Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
 
@@ -48,7 +45,7 @@ namespace API.Controllers
 
         [HttpGet("get-full")]
         [AllowAnonymous]
-        public async Task<ActionResult<ResultDto<InventoryGetFullDto?>>> GetInventoryFullAsync([FromQuery] Guid inventoryId)
+        public async Task<ActionResult<ResultDto<InventoryGetFullDto>>> GetInventoryFullAsync([FromQuery] Guid inventoryId)
         {
             var result = await _invSrv.GetInventoryFullAsync(inventoryId);
 
@@ -57,20 +54,14 @@ namespace API.Controllers
 
         [HttpPost("update")]
         [Authorize]
-        public async Task<ActionResult<ResultDto?>> UpdateInventoryAsync([FromBody] InventoryUpdateDto dto)
+        public async Task<ActionResult<ResultDto>> UpdateInventoryAsync([FromBody] InventoryUpdateDto dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto<Guid>(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+                return BadRequest(new ResultDto(false, "You are blocked"));
 
             if (!(await _checkSrv.IsInventoryCreatorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), [dto.InventoryId])
                 || User.IsInRole("admin")))
-            {
-                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
-                return Ok(checkResult);
-            }
+                return Ok(new ResultDto(false, "You are not allowed to edit inventory"));
 
             var result = await _invSrv.UpdateInventoryAsync(dto);
 
@@ -79,13 +70,10 @@ namespace API.Controllers
 
         [HttpDelete("delete")]
         [Authorize]
-        public async Task<ActionResult<ResultDto?>> RemoveInventoryRangeAsync([FromQuery] IEnumerable<Guid> inventoryIds)
+        public async Task<ActionResult<ResultDto>> RemoveInventoryRangeAsync([FromQuery] IEnumerable<Guid> inventoryIds)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto<Guid>(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+                return BadRequest(new ResultDto(false, "You are blocked"));
 
             var checkResult = new ResultDto(true);
 

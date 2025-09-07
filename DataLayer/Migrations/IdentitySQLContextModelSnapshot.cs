@@ -115,11 +115,46 @@ namespace DataLayer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("UserId", "InventoryId", "WrittenAt");
 
                     b.HasIndex("InventoryId");
 
                     b.ToTable("chat", (string)null);
+                });
+
+            modelBuilder.Entity("CommonLayer.Models.Entity.CustomDescriptionSequenceEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DescripionType")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("InventoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryId", "ItemId");
+
+                    b.HasIndex("ItemId", "InventoryId");
+
+                    b.ToTable("custom_description_sequence", (string)null);
                 });
 
             modelBuilder.Entity("CommonLayer.Models.Entity.CustomIdElementSequenceEntity", b =>
@@ -136,6 +171,9 @@ namespace DataLayer.Migrations
                         .IsUnicode(true)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int?>("IncrementValue")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("InventoryId")
                         .HasColumnType("uuid");
 
@@ -151,7 +189,7 @@ namespace DataLayer.Migrations
 
                     b.HasIndex("ItemId", "InventoryId");
 
-                    b.ToTable("CustomIdSequence");
+                    b.ToTable("custom_id_sequence", (string)null);
                 });
 
             modelBuilder.Entity("CommonLayer.Models.Entity.InventoryEditorsEntity", b =>
@@ -177,6 +215,11 @@ namespace DataLayer.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<byte[]>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -268,11 +311,66 @@ namespace DataLayer.Migrations
                     b.ToTable("item_type", (string)null);
                 });
 
+            modelBuilder.Entity("CommonLayer.Models.Entity.StoredItemDescriptionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("Bool")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("DescriptionType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Href")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LongText")
+                        .HasMaxLength(2000)
+                        .IsUnicode(true)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ShortText")
+                        .HasMaxLength(150)
+                        .IsUnicode(true)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("StoredItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoredItemId");
+
+                    b.ToTable("stored_item_descriptions", (string)null);
+                });
+
             modelBuilder.Entity("CommonLayer.Models.Entity.StoredItemsEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CreatorName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("CustomId")
                         .IsRequired()
@@ -454,6 +552,17 @@ namespace DataLayer.Migrations
                     b.Navigation("Inventory");
                 });
 
+            modelBuilder.Entity("CommonLayer.Models.Entity.CustomDescriptionSequenceEntity", b =>
+                {
+                    b.HasOne("CommonLayer.Models.Entity.InventoryItemTypesEntity", "InventoryItemType")
+                        .WithMany("CustomDescriptionSequence")
+                        .HasForeignKey("ItemId", "InventoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItemType");
+                });
+
             modelBuilder.Entity("CommonLayer.Models.Entity.CustomIdElementSequenceEntity", b =>
                 {
                     b.HasOne("CommonLayer.Models.Entity.InventoryItemTypesEntity", "InventoryItemType")
@@ -531,6 +640,17 @@ namespace DataLayer.Migrations
                     b.Navigation("Inventory");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("CommonLayer.Models.Entity.StoredItemDescriptionEntity", b =>
+                {
+                    b.HasOne("CommonLayer.Models.Entity.StoredItemsEntity", "StoredItem")
+                        .WithMany("StoredItemDescriptions")
+                        .HasForeignKey("StoredItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StoredItem");
                 });
 
             modelBuilder.Entity("CommonLayer.Models.Entity.StoredItemsEntity", b =>
@@ -613,6 +733,8 @@ namespace DataLayer.Migrations
 
             modelBuilder.Entity("CommonLayer.Models.Entity.InventoryItemTypesEntity", b =>
                 {
+                    b.Navigation("CustomDescriptionSequence");
+
                     b.Navigation("CustomIdSequence");
 
                     b.Navigation("StoredItems");
@@ -626,6 +748,11 @@ namespace DataLayer.Migrations
             modelBuilder.Entity("CommonLayer.Models.Entity.ItemTypeEntity", b =>
                 {
                     b.Navigation("InventoryItemTypes");
+                });
+
+            modelBuilder.Entity("CommonLayer.Models.Entity.StoredItemsEntity", b =>
+                {
+                    b.Navigation("StoredItemDescriptions");
                 });
 
             modelBuilder.Entity("CommonLayer.Models.Entity.TagEntity", b =>

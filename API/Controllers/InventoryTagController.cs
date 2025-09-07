@@ -37,7 +37,7 @@ namespace API.Controllers
                 return Ok(checkResult);
             }
 
-            await _invTagSrv.ModifyInventoryTagsRangeAsync(dto.Id, dto.Values);
+            await _invTagSrv.UpdateInventoryTagsAsync(dto.Id, dto.Values);
 
             return Ok(null);
         }

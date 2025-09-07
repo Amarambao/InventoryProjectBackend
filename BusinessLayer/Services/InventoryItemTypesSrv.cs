@@ -18,34 +18,23 @@ namespace BusinessLayer.Services
             _itemTypeSrv = itemTypeSrv;
         }
 
-        public async Task ModifyInventoryItemsRangeAsync(Guid inventoryId, IEnumerable<string> itemsRequest)
+        public async Task UpdateInventoryItemTypesAsync(Guid inventoryId, IEnumerable<string> itemsRequest)
         {
-            var inventoryItems = (await _invItemTypeRepo.GetRangeAsync(inventoryId: inventoryId)).ToDictionary(i => i.Item.NormalizedName);
-
             await _itemTypeSrv.CreateNonExistingAsync(itemsRequest);
 
-            var itemTypes = await _itemTypeSrv.GetItemRangeAsync(itemTypes: itemsRequest);
+            var itemTypes = (await _itemTypeSrv.GetItemRangeAsync(itemTypes: itemsRequest)).ToDictionary(i => i.NormalizedName, i => i.Id);
 
-            var toCreate = new List<InventoryItemTypesEntity>();
-            var toRemove = new Dictionary<string, InventoryItemTypesEntity>(inventoryItems);
+            var inventoryItemTypesToUpgrade = itemsRequest
+                .Select(r => r.CustomNormalize())
+                .Where(n => itemTypes.ContainsKey(n))
+                .Select(n => new InventoryItemTypesEntity
+                {
+                    InventoryId = inventoryId,
+                    ItemId = itemTypes[n]
+                })
+                .ToList();
 
-            foreach (var name in itemsRequest)
-            {
-                if (inventoryItems.TryGetValue(name.CustomNormalize(), out var existing))
-                    toRemove.Remove(existing.Item.NormalizedName);
-                else
-                    toCreate.Add(new InventoryItemTypesEntity
-                    {
-                        InventoryId = inventoryId,
-                        ItemId = itemTypes.First(i => i.NormalizedName == name.CustomNormalize()).Id,
-                    });
-            }
-
-            if (toCreate.Any())
-                await _invItemTypeRepo.CreateRangeAsync(toCreate);
-
-            if (toRemove.Any())
-                await _invItemTypeRepo.RemoveRangeAsync(toRemove.Values);
+            await _invItemTypeRepo.UpdateInventoryItemTypesAsync(inventoryId, inventoryItemTypesToUpgrade);
         }
     }
 }

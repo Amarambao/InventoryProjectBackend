@@ -1,5 +1,4 @@
-﻿using CommonLayer.Enum;
-using CommonLayer.Extensions;
+﻿using CommonLayer.Extensions;
 using CommonLayer.Models.Dto.General;
 using CommonLayer.Models.Entity;
 using DataLayer.Contexts;
@@ -42,42 +41,15 @@ namespace DataLayer.Repos
                 .ToListAsync();
         }
 
-        public async Task<int?> GetMaxUIntStoredAsync(Guid inventoryId, Guid itemId)
-        {
-            var uintSequenceIndex = (await _context.CustomIdSequence
-                .Where(e => e.InventoryId == inventoryId && e.ItemId == itemId)
-                .OrderBy(e => e.Order)
-                .ToListAsync())
-                .FindIndex(e => e.ElementType == CustomIdElementEnum.UIntSequence);
-
-            if (uintSequenceIndex == -1)
-                return null;
-
-            var storedCustomIds = await _context.StoredItems
-                .Where(s => s.InventoryId == inventoryId && s.ItemId == itemId)
-                .Select(s => s.CustomId)
-                .ToListAsync();
-
-            var maxSequence = storedCustomIds
-                .Select(id => id.Split('-'))
-                .Where(parts => parts.Length > uintSequenceIndex)
-                .Select(parts => int.TryParse(parts[uintSequenceIndex], out var val) ? val : 0)
-                .DefaultIfEmpty(0)
-                .Max();
-
-            return maxSequence + 1;
-        }
+        public Task<StoredItemsEntity?> GetFullInfoAsync(Guid itemId)
+            => _context.StoredItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == itemId);
 
         public Task<bool> IsItemExistAsync(Guid inventoryId, Guid itemId, string customId)
             => _context.StoredItems
                 .Where(i => i.InventoryId == inventoryId && i.ItemId == itemId)
                 .AnyAsync(i => i.CustomId == customId);
-
-        public async Task UpdateRangeAsync(IEnumerable<StoredItemsEntity> storedItems)
-        {
-            _context.UpdateRange(storedItems);
-            await _context.SaveChangesAsync();
-        }
 
         public async Task RemoveRangeAsync(IEnumerable<Guid> storedItemIds)
         {

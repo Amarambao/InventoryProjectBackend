@@ -24,10 +24,10 @@ namespace DataLayer.Settings
 
         private static void AddContext(IServiceCollection services, IConfiguration configuration)
         {
-            var connectionSection = configuration.GetConnectionString("PostgreSQLContext");
+            var connectionSection = configuration.GetConnectionString("IdentityDatabase");
 
             services.AddDbContext<PostgreSQLContext>(
-                    options => options.UseNpgsql(configuration.GetConnectionString("PostgreSQLContext")));
+                    options => options.UseNpgsql(configuration.GetConnectionString("IdentityDatabase")));
         }
 
         private static void AddIdentity(IServiceCollection services, IConfiguration configuration)
@@ -54,6 +54,7 @@ namespace DataLayer.Settings
         {
             services.AddScoped<IChatMessagesRepo, ChatMessagesRepo>();
             services.AddScoped<ICheckRepo, CheckRepo>();
+            services.AddScoped<ICustomDescriptionSequenceRepo, CustomDescriptionSequenceRepo>();
             services.AddScoped<ICustomIdElementSequenceRepo, CustomIdElementSequenceRepo>();
             services.AddScoped<IInventoryEditorsRepo, InventoryEditorsRepo>();
             services.AddScoped<IInventoryItemTypesRepo, InventoryItemTypesRepo>();
