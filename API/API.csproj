@@ -17,7 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\BusinessLayer\BusinessLayer.csproj" />
     <ProjectReference Include="..\CommonLayer\CommonLayer.csproj" />
-    <ProjectReference Include="..\SignalR\SignalR.csproj" />
   </ItemGroup>
 
 </Project>
