@@ -185,7 +185,8 @@ namespace DataLayer.Repos.Bogus
                     Id = Guid.NewGuid(),
                     InventoryTypeId = faker.PickRandom(inventoryTypes).Id,
                     Description = waffle.Text(faker.Random.Number(3), false),
-                    IsPublic = faker.Random.Bool()
+                    IsPublic = faker.Random.Bool(),
+                    ConcurrencyStamp = RandomNumberGenerator.GetBytes(16)
                 };
 
                 await _context.Inventories.AddAsync(inventory);

@@ -27,17 +27,12 @@ namespace API.Controllers
         public async Task<ActionResult<ResultDto?>> AddRange([FromBody] IdAndListDto<Guid> dto)
         {
             if (await _checkSrv.CheckUserStatus(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)))
-            {
-                var resultDto = new ResultDto<Guid>(false, "You are blocked");
-                return BadRequest(resultDto);
-            }
+                return BadRequest(new ResultDto<Guid>(false, "You are blocked"));
 
             if (!(await _checkSrv.IsInventoryCreatorAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), [dto.Id])
                 || User.IsInRole("admin")))
-            {
-                var checkResult = new ResultDto(false, "You are not allowed to edit inventory");
-                return Ok(checkResult);
-            }
+                return Ok(new ResultDto(false, "You are not allowed to edit inventory"));
+
 
             await _invEditorsSrv.AddRange(dto.Id, dto.Values);
 

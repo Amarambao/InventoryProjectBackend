@@ -1,4 +1,5 @@
 ﻿using CommonLayer.Models.Dto.Inventory;
+using System.Security.Cryptography;
 
 namespace CommonLayer.Models.Entity
 {
@@ -29,6 +30,7 @@ namespace CommonLayer.Models.Entity
             IsPublic = dto.IsPublic;
             ChatMessages = [];
             InventoryEditors = [new() { InventoryId = Id, UserId = creatorId, IsCreator = true }];
+            ConcurrencyStamp = RandomNumberGenerator.GetBytes(16);
         }
     }
 }
